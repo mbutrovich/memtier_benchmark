@@ -159,7 +159,7 @@ public:
         } else if (cfg->key_pattern[index] == 'G') {
             return OBJECT_GENERATOR_KEY_GAUSSIAN;
         } else if (cfg->key_pattern[index] == 'Z') {
-            return OBJECT_GENERATOR_KEY_ZIPFIAN;
+            return OBJECT_GENERATOR_KEY_ZIPF;
         } else {
             if (index == key_pattern_set)
                 return OBJECT_GENERATOR_KEY_SET_ITER;
@@ -175,7 +175,7 @@ public:
         } else if (cmd.key_pattern == 'G') {
             return OBJECT_GENERATOR_KEY_GAUSSIAN;
         } else if (cmd.key_pattern == 'Z') {
-            return OBJECT_GENERATOR_KEY_ZIPFIAN;
+            return OBJECT_GENERATOR_KEY_ZIPF;
         } else {
             return index;
         }

@@ -432,14 +432,14 @@ uint64_t object_generator::zipf_distribution(const uint64_t r_min, const uint64_
 
 unsigned long long object_generator::get_key_index(int iter)
 {
-    assert(iter < static_cast<int>(m_next_key.size()) && iter >= OBJECT_GENERATOR_KEY_ZIPFIAN);
+    assert(iter < static_cast<int>(m_next_key.size()) && iter >= OBJECT_GENERATOR_KEY_ZIPF);
 
     unsigned long long k;
     if (iter==OBJECT_GENERATOR_KEY_RANDOM) {
         k = random_range(m_key_min, m_key_max);
     } else if(iter==OBJECT_GENERATOR_KEY_GAUSSIAN) {
         k = normal_distribution(m_key_min, m_key_max, m_key_stddev, m_key_median);
-    } else if (iter == OBJECT_GENERATOR_KEY_ZIPFIAN) {
+    } else if (iter == OBJECT_GENERATOR_KEY_ZIPF) {
         k = zipf_distribution(m_key_min, m_key_max, m_key_theta);
     } else {
         if (m_next_key[iter] < m_key_min)

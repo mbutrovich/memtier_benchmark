@@ -81,7 +81,7 @@ public:
 #define OBJECT_GENERATOR_KEY_GET_ITER   0
 #define OBJECT_GENERATOR_KEY_RANDOM    -1
 #define OBJECT_GENERATOR_KEY_GAUSSIAN  -2
-#define OBJECT_GENERATOR_KEY_ZIPFIAN   -3
+#define OBJECT_GENERATOR_KEY_ZIPF      -3
 
 class object_generator {
 public:
