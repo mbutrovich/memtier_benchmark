@@ -55,9 +55,9 @@ enum get_key_response { not_available, available_for_conn, available_for_other_c
 class client : public connections_manager {
 protected:
 
-    std::vector<shard_connection *> m_connections;
+    std::vector<shard_connection*> m_connections;
 
-    struct event_base *m_event_base;
+    struct event_base* m_event_base;
     bool m_initialized;
     bool m_end_set;
 
@@ -66,8 +66,8 @@ protected:
     int m_key_len;
 
     // test related
-    benchmark_config *m_config;
-    object_generator *m_obj_gen;
+    benchmark_config* m_config;
+    object_generator* m_obj_gen;
     run_stats m_stats;
 
     unsigned long long m_reqs_processed;          // requests processed (responses received)
@@ -83,20 +83,20 @@ protected:
     keylist *m_keylist;                           // used to construct multi commands
 
 public:
-    client(client_group *group);
+    client(client_group* group);
     client(struct event_base *event_base, benchmark_config *config, abstract_protocol *protocol, object_generator *obj_gen);
     virtual ~client();
     bool setup_client(benchmark_config *config, abstract_protocol *protocol, object_generator *obj_gen);
     int prepare(void);
     bool initialized(void);
-    run_stats *get_stats(void) { return &m_stats; }
+    run_stats* get_stats(void) { return &m_stats; }
 
     virtual get_key_response get_key_for_conn(unsigned int command_index, unsigned int conn_id, unsigned long long* key_index);
-    virtual bool create_arbitrary_request(unsigned int command_index, struct timeval &timestamp, unsigned int conn_id);
-    bool create_wait_request(struct timeval &timestamp, unsigned int conn_id);
-    bool create_set_request(struct timeval &timestamp, unsigned int conn_id);
-    bool create_get_request(struct timeval &timestamp, unsigned int conn_id);
-    bool create_mget_request(struct timeval &timestamp, unsigned int conn_id);
+    virtual bool create_arbitrary_request(unsigned int command_index, struct timeval& timestamp, unsigned int conn_id);
+    bool create_wait_request(struct timeval& timestamp, unsigned int conn_id);
+    bool create_set_request(struct timeval& timestamp, unsigned int conn_id);
+    bool create_get_request(struct timeval& timestamp, unsigned int conn_id);
+    bool create_mget_request(struct timeval& timestamp, unsigned int conn_id);
 
     // client manager api's
     unsigned long long get_reqs_processed() {
@@ -131,13 +131,13 @@ public:
     //
 
     /* Get current executed arbitrary command */
-    const arbitrary_command &get_arbitrary_command(unsigned int command_index) {
+    const arbitrary_command & get_arbitrary_command(unsigned int command_index) {
         return m_config->arbitrary_commands->at(command_index);
     }
 
     /* Set the arbitrary command index to the next to be executed */
     void advance_arbitrary_command_index() {
-        while (true) {
+        while(true) {
             if (m_arbitrary_command_ratio_count < get_arbitrary_command(m_executed_command_index).ratio) {
                 m_arbitrary_command_ratio_count++;
                 return;
@@ -169,7 +169,7 @@ public:
     }
 
     inline int arbitrary_obj_iter_type(unsigned int index) {
-        const arbitrary_command &cmd = get_arbitrary_command(index);
+        const arbitrary_command& cmd = get_arbitrary_command(index);
         if (cmd.key_pattern == 'R') {
             return OBJECT_GENERATOR_KEY_RANDOM;
         } else if (cmd.key_pattern == 'G') {
@@ -200,13 +200,13 @@ public:
 
 class client_group {
 protected:
-    struct event_base *m_base;
+    struct event_base* m_base;
     benchmark_config *m_config;
-    abstract_protocol *m_protocol;
-    object_generator *m_obj_gen;
-    std::vector<client *> m_clients;
+    abstract_protocol* m_protocol;
+    object_generator* m_obj_gen;
+    std::vector<client*> m_clients;
 public:
-    client_group(benchmark_config *cfg, abstract_protocol *protocol, object_generator *obj_gen);
+    client_group(benchmark_config *cfg, abstract_protocol *protocol, object_generator* obj_gen);
     ~client_group();
 
     int create_clients(int count);
@@ -217,16 +217,16 @@ public:
 
     struct event_base *get_event_base(void) { return m_base; }
     benchmark_config *get_config(void) { return m_config; }
-    abstract_protocol *get_protocol(void) { return m_protocol; }
-    object_generator *get_obj_gen(void) { return m_obj_gen; }
+    abstract_protocol* get_protocol(void) { return m_protocol; }
+    object_generator* get_obj_gen(void) { return m_obj_gen; }
 
     unsigned long int get_total_bytes(void);
     unsigned long int get_total_ops(void);
     unsigned long int get_total_latency(void);
     unsigned long int get_duration_usec(void);
 
-    void merge_run_stats(run_stats *target);
+    void merge_run_stats(run_stats* target);
 };
 
 
-#endif    /* _CLIENT_H */
+#endif	/* _CLIENT_H */
