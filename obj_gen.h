@@ -19,7 +19,6 @@
 #ifndef _OBJ_GEN_H
 #define _OBJ_GEN_H
 
-#include <cstdint>
 #include <vector>
 #include "file_io.h"
 
@@ -45,11 +44,11 @@ class gaussian_noise: public random_generator {
 public:
     gaussian_noise() { m_hasSpare = false; compute_zipf_coefficient(); }
     unsigned long long gaussian_distribution_range(double stddev, double median, unsigned long long min, unsigned long long max);
-    uint64_t zipf_distribution_range(double theta, uint64_t min, uint64_t max);
+    unsigned long long zipf_distribution_range(double theta, unsigned long long min, unsigned long long max);
     void compute_zipf_coefficient() { m_computeZipfCoefficient = true;}
 private:
     double gaussian_distribution(const double &stddev);
-    uint64_t zipf_distribution(double alpha, uint64_t n);
+    unsigned long long zipf_distribution(double alpha, unsigned long long n);
     bool m_hasSpare;
 	double m_spare;
     bool m_computeZipfCoefficient;
@@ -129,7 +128,7 @@ public:
 
     unsigned long long random_range(unsigned long long r_min, unsigned long long r_max);
     unsigned long long normal_distribution(unsigned long long r_min, unsigned long long r_max, double r_stddev, double r_median);
-    uint64_t zipf_distribution(uint64_t r_min, uint64_t r_max, double r_theta);
+    unsigned long long zipf_distribution(unsigned long long r_min, unsigned long long r_max, double r_theta);
 
     void set_random_data(bool random_data);
     void set_data_size_fixed(unsigned int size);
