@@ -181,11 +181,11 @@ void run_stats::update_get_op(struct timeval* ts, unsigned int bytes, unsigned i
     hdr_record_value(inst_m_get_latency_histogram,latency);
 }
 
-void run_stats::update_set_op(struct timeval* ts, unsigned int bytes, unsigned int latency)
+void run_stats::update_set_op(struct timeval* ts, unsigned int bytes, unsigned int latency, unsigned int hits, unsigned int misses)
 {
     roll_cur_stats(ts);
 
-    m_cur_stats.m_set_cmd.update_op(bytes, latency);
+    m_cur_stats.m_set_cmd.update_op(bytes, latency, hits, misses);
     m_totals.update_op(bytes, latency);
     hdr_record_value(m_set_latency_histogram,latency);
     hdr_record_value(inst_m_set_latency_histogram,latency);
@@ -736,8 +736,10 @@ void run_stats::aggregate_average(const std::vector<run_stats>& all_stats)
     m_totals.m_wait_cmd.aggregate_average(all_stats.size());
     m_totals.m_ar_commands.aggregate_average(all_stats.size());
     m_totals.m_ops_sec /= all_stats.size();
-    m_totals.m_hits_sec /= all_stats.size();
-    m_totals.m_misses_sec /= all_stats.size();
+    m_totals.m_set_hits_sec /= all_stats.size();
+    m_totals.m_set_misses_sec /= all_stats.size();
+    m_totals.m_get_hits_sec /= all_stats.size();
+    m_totals.m_get_misses_sec /= all_stats.size();
     m_totals.m_moved_sec /= all_stats.size();
     m_totals.m_ask_sec /= all_stats.size();
     m_totals.m_bytes_sec /= all_stats.size();
@@ -815,8 +817,10 @@ void run_stats::summarize(totals& result) const
     result.m_ar_commands.summarize(totals.m_ar_commands, test_duration_usec);
 
     // hits,misses / sec
-    result.m_hits_sec = (double) totals.m_get_cmd.m_hits / test_duration_usec * 1000000;
-    result.m_misses_sec = (double) totals.m_get_cmd.m_misses / test_duration_usec * 1000000;
+    result.m_set_hits_sec = (double) totals.m_set_cmd.m_hits / test_duration_usec * 1000000;
+    result.m_set_misses_sec = (double) totals.m_set_cmd.m_misses / test_duration_usec * 1000000;
+    result.m_get_hits_sec = (double) totals.m_get_cmd.m_hits / test_duration_usec * 1000000;
+    result.m_get_misses_sec = (double) totals.m_get_cmd.m_misses / test_duration_usec * 1000000;
 
     // total/sec
     result.m_ops_sec = (double) result.m_ops / test_duration_usec * 1000000;
@@ -990,10 +994,10 @@ void run_stats::print_hits_sec_column(output_table &table) {
 
     column.elements.push_back(*el.init_str("%12s ", "Hits/sec"));
     column.elements.push_back(*el.init_str("%s", "-------------"));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_hits_sec));
     column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_hits_sec));
-    column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_hits_sec));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec + m_totals.m_get_hits_sec));
 
     table.add_column(column);
 }
@@ -1004,10 +1008,10 @@ void run_stats::print_missess_sec_column(output_table &table) {
 
     column.elements.push_back(*el.init_str("%12s ", "Misses/sec"));
     column.elements.push_back(*el.init_str("%s", "-------------"));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_misses_sec));
     column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_misses_sec));
-    column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_misses_sec));
+    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec + m_totals.m_get_misses_sec));
 
     table.add_column(column);
 }
@@ -1200,8 +1204,8 @@ void run_stats::print_json(json_handler *jsonhandler, arbitrary_command_list& co
         std::vector<one_sec_cmd_stats> set_stats = get_one_sec_cmd_stats_set();
         std::vector<one_sec_cmd_stats> wait_stats = get_one_sec_cmd_stats_wait();
         result_print_to_json(jsonhandler, "Sets",m_totals.m_set_cmd.m_ops_sec,
-                             0.0,
-                             0.0,
+                             m_totals.m_set_hits_sec,
+                             m_totals.m_set_misses_sec,
                              cluster_mode ? m_totals.m_set_cmd.m_moved_sec : -1,
                              cluster_mode ? m_totals.m_set_cmd.m_ask_sec : -1,
                              m_totals.m_set_cmd.m_bytes_sec,
@@ -1211,8 +1215,8 @@ void run_stats::print_json(json_handler *jsonhandler, arbitrary_command_list& co
                              set_stats
                             );
         result_print_to_json(jsonhandler,"Gets",m_totals.m_get_cmd.m_ops_sec,
-                             m_totals.m_hits_sec,
-                             m_totals.m_misses_sec,
+                             m_totals.m_get_hits_sec,
+                             m_totals.m_get_misses_sec,
                              cluster_mode ? m_totals.m_get_cmd.m_moved_sec : -1,
                              cluster_mode ? m_totals.m_get_cmd.m_ask_sec : -1,
                              m_totals.m_get_cmd.m_bytes_sec,
@@ -1235,8 +1239,8 @@ void run_stats::print_json(json_handler *jsonhandler, arbitrary_command_list& co
     }
     std::vector<one_sec_cmd_stats> total_stats = get_one_sec_cmd_stats_totals();
     result_print_to_json(jsonhandler,"Totals",m_totals.m_ops_sec,
-                         m_totals.m_hits_sec,
-                         m_totals.m_misses_sec,
+                         m_totals.m_set_hits_sec + m_totals.m_get_hits_sec,
+                         m_totals.m_set_misses_sec + m_totals.m_get_misses_sec,
                          cluster_mode ? m_totals.m_moved_sec : -1,
                          cluster_mode ? m_totals.m_ask_sec : -1,
                          m_totals.m_bytes_sec,

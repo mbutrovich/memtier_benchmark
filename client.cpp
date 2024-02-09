@@ -441,7 +441,9 @@ void client::handle_response(unsigned int conn_id, struct timeval timestamp,
         case rt_set:
             m_stats.update_set_op(&timestamp,
                                   request->m_size + response->get_total_len(),
-                                  ts_diff(request->m_sent_time, timestamp));
+                                  ts_diff(request->m_sent_time, timestamp),
+                                  !response->is_error(),
+                                  response->is_error());
             break;
         case rt_wait:
             m_stats.update_wait_op(&timestamp,

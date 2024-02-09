@@ -173,8 +173,10 @@ public:
     safe_hdr_histogram latency_histogram;
     double m_ops_sec;
     double m_bytes_sec;
-    double m_hits_sec;
-    double m_misses_sec;
+    double m_set_hits_sec;
+    double m_set_misses_sec;
+    double m_get_hits_sec;
+    double m_get_misses_sec;
     double m_moved_sec;
     double m_ask_sec;
     unsigned long long int m_latency;

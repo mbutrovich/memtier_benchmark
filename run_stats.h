@@ -122,7 +122,7 @@ public:
     void set_end_time(struct timeval* end_time);
 
     void update_get_op(struct timeval* ts, unsigned int bytes, unsigned int latency, unsigned int hits, unsigned int misses);
-    void update_set_op(struct timeval* ts, unsigned int bytes, unsigned int latency);
+    void update_set_op(struct timeval* ts, unsigned int bytes, unsigned int latency, unsigned int hits, unsigned int misses);
 
     void update_moved_get_op(struct timeval* ts, unsigned int bytes, unsigned int latency);
     void update_moved_set_op(struct timeval* ts, unsigned int bytes, unsigned int latency);
