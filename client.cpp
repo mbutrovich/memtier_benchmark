@@ -425,7 +425,7 @@ void client::handle_response(unsigned int conn_id, struct timeval timestamp,
                              request *request, protocol_response *response)
 {
     if (response->is_error()) {
-        benchmark_error_log("server %s handle error response: %s\n",
+        benchmark_debug_log("server %s handle error response: %s\n",
                             m_connections[conn_id]->get_readable_id(),
                             response->get_status());
     }
