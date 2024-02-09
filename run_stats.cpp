@@ -317,7 +317,7 @@ void run_stats::save_csv_one_sec(FILE *f,
                                  unsigned long int& total_set_ops,
                                  unsigned long int& total_wait_ops) {
     fprintf(f, "Per-Second Benchmark Data\n");
-    fprintf(f, "Second,SET Requests,SET Average Latency,SET Total Bytes,"
+    fprintf(f, "Second,SET Requests,SET Average Latency,SET Total Bytes,SET Misses,SET Hits,"
                "GET Requests,GET Average Latency,GET Total Bytes,GET Misses,GET Hits,"
                "WAIT Requests,WAIT Average Latency\n");
 
@@ -327,11 +327,13 @@ void run_stats::save_csv_one_sec(FILE *f,
     for (std::list<one_second_stats>::iterator i = m_stats.begin();
          i != m_stats.end(); i++) {
 
-        fprintf(f, "%u,%lu,%u.%06u,%lu,%lu,%u.%06u,%lu,%u,%u,%lu,%u.%06u\n",
+        fprintf(f, "%u,%lu,%u.%06u,%lu,%u,%u,%lu,%u.%06u,%lu,%u,%u,%lu,%u.%06u\n",
                 i->m_second,
                 i->m_set_cmd.m_ops,
                 USEC_FORMAT(AVERAGE(i->m_set_cmd.m_total_latency, i->m_set_cmd.m_ops)),
                 i->m_set_cmd.m_bytes,
+                i->m_set_cmd.m_misses,
+                i->m_set_cmd.m_hits,
                 i->m_get_cmd.m_ops,
                 USEC_FORMAT(AVERAGE(i->m_get_cmd.m_total_latency, i->m_get_cmd.m_ops)),
                 i->m_get_cmd.m_bytes,
