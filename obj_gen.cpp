@@ -120,6 +120,44 @@ double gaussian_noise::gaussian_distribution(const double &stddev)
     return stddev * u * s;
 }
 
+
+// https://en.wikipedia.org/wiki/Zipf's_law#Formal_definition
+// https://cse.usf.edu/~kchriste/tools/genzipf.c
+unsigned long long gaussian_noise::zipf_distribution(const double alpha, const unsigned long long n) {
+    assert(alpha > 1);
+    assert(n > 1);
+
+    if (m_computeZipfCoefficient) {
+        for (unsigned long long i = 1; i <= n; i++) {
+            m_normalization_constant += 1.0 / pow((double) i, alpha);
+        }
+        m_normalization_constant = 1.0 / m_normalization_constant;
+        m_computeZipfCoefficient = false;
+    }
+
+    double randf;
+    do {
+        randf = (get_random() / ((double) get_random_max()));
+    } while ((randf == 0) || (randf == 1));
+    assert(randf > 0);
+    assert(randf < 1);
+
+    // Map randf to the value
+    double sum_prob = 0;
+    unsigned long long zipf_value = 0;
+    for (unsigned long long i = 1; i <= n; i++) {
+        sum_prob += m_normalization_constant / pow((double) i, alpha);
+        if (sum_prob >= randf) {
+            zipf_value = i;
+            break;
+        }
+    }
+
+    assert(zipf_value >= 1 && zipf_value <= n);
+
+    return zipf_value;
+}
+
 unsigned long long gaussian_noise::gaussian_distribution_range(double stddev, double median, unsigned long long min, unsigned long long max)
 {
     if (min==max)
@@ -139,6 +177,25 @@ unsigned long long gaussian_noise::gaussian_distribution_range(double stddev, do
     return val;
 }
 
+unsigned long long gaussian_noise::zipf_distribution_range(double theta, const unsigned long long min, const unsigned long long max) {
+    if (theta == 0) {
+        theta = 0.5;
+    }
+    const double alpha = 1 / (1 - theta);
+    const unsigned long long n = max - min + 1; // zipf_distribution() returns [1,n]
+
+    assert(alpha > 1);
+    assert(n > 1);
+    assert(theta > 0);
+    assert(theta < 1);
+
+    const unsigned long long zipf_rv = zipf_distribution(alpha, n) - 1; // normalize back to [0, n-1]
+    const unsigned long long result = zipf_rv + min;
+    assert(result >= min);
+    assert(result <= max);
+    return result;
+}
+
 object_generator::object_generator(size_t n_key_iterators/*= OBJECT_GENERATOR_KEY_ITERATORS*/) :
     m_data_size_type(data_size_unknown),
     m_data_size_pattern(NULL),
@@ -150,6 +207,7 @@ object_generator::object_generator(size_t n_key_iterators/*= OBJECT_GENERATOR_KE
     m_key_max(0),
     m_key_stddev(0),
     m_key_median(0),
+    m_key_theta(0),
     m_value_buffer(NULL),
     m_random_fd(-1),
     m_value_buffer_size(0),
@@ -172,6 +230,7 @@ object_generator::object_generator(const object_generator& copy) :
     m_key_max(copy.m_key_max),
     m_key_stddev(copy.m_key_stddev),
     m_key_median(copy.m_key_median),
+    m_key_theta(copy.m_key_theta),
     m_value_buffer(NULL),
     m_random_fd(-1),
     m_value_buffer_size(0),
@@ -348,6 +407,11 @@ void object_generator::set_key_distribution(double key_stddev, double key_median
     m_key_median = key_median;
 }
 
+void object_generator::set_key_skew(const double key_theta) {
+    m_key_theta = key_theta;
+    m_random.compute_zipf_coefficient();
+}
+
 // return a random number between r_min and r_max
 unsigned long long object_generator::random_range(unsigned long long r_min, unsigned long long  r_max)
 {
@@ -361,15 +425,22 @@ unsigned long long object_generator::normal_distribution(unsigned long long r_mi
     return m_random.gaussian_distribution_range(r_stddev, r_median, r_min, r_max);
 }
 
+// return a random number between r_min and r_max using zipf distribution according to r_theta
+unsigned long long object_generator::zipf_distribution(const unsigned long long r_min, const unsigned long long r_max, const double r_theta) {
+    return m_random.zipf_distribution_range(r_theta, r_min, r_max);
+}
+
 unsigned long long object_generator::get_key_index(int iter)
 {
-    assert(iter < static_cast<int>(m_next_key.size()) && iter >= OBJECT_GENERATOR_KEY_GAUSSIAN);
+    assert(iter < static_cast<int>(m_next_key.size()) && iter >= OBJECT_GENERATOR_KEY_ZIPF);
 
     unsigned long long k;
     if (iter==OBJECT_GENERATOR_KEY_RANDOM) {
         k = random_range(m_key_min, m_key_max);
     } else if(iter==OBJECT_GENERATOR_KEY_GAUSSIAN) {
         k = normal_distribution(m_key_min, m_key_max, m_key_stddev, m_key_median);
+    } else if (iter == OBJECT_GENERATOR_KEY_ZIPF) {
+        k = zipf_distribution(m_key_min, m_key_max, m_key_theta);
     } else {
         if (m_next_key[iter] < m_key_min)
             m_next_key[iter] = m_key_min;

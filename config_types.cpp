@@ -327,7 +327,8 @@ bool arbitrary_command::set_key_pattern(const char* pattern_str) {
     if (pattern_str[0] != 'R' &&
         pattern_str[0] != 'G' &&
         pattern_str[0] != 'S' &&
-        pattern_str[0] != 'P') {
+        pattern_str[0] != 'P' &&
+        pattern_str[0] != 'Z') {
 
         return false;
     }

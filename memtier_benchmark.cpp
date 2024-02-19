@@ -151,6 +151,7 @@ static void config_print(FILE *file, struct benchmark_config *cfg)
         "key_pattern = %s\n"
         "key_stddev = %f\n"
         "key_median = %f\n"
+        "key_theta = %f\n"
         "reconnect_interval = %u\n"
         "multi_key_get = %u\n"
         "authenticate = %s\n"
@@ -201,6 +202,7 @@ static void config_print(FILE *file, struct benchmark_config *cfg)
         cfg->key_pattern,
         cfg->key_stddev,
         cfg->key_median,
+        cfg->key_theta,
         cfg->reconnect_interval,
         cfg->multi_key_get,
         cfg->authenticate ? cfg->authenticate : "",
@@ -259,6 +261,7 @@ static void config_print_to_json(json_handler * jsonhandler, struct benchmark_co
     jsonhandler->write_obj("key_pattern"       ,"\"%s\"",       cfg->key_pattern);
     jsonhandler->write_obj("key_stddev"        ,"%f",           cfg->key_stddev);
     jsonhandler->write_obj("key_median"        ,"%f",           cfg->key_median);
+    jsonhandler->write_obj("key_theta"         ,"%f",           cfg->key_theta);
     jsonhandler->write_obj("reconnect_interval","%u",    		cfg->reconnect_interval);
     jsonhandler->write_obj("multi_key_get"     ,"%u",         	cfg->multi_key_get);
     jsonhandler->write_obj("authenticate"      ,"\"%s\"",      	cfg->authenticate ? cfg->authenticate : "");
@@ -400,6 +403,7 @@ static int config_parse_args(int argc, char *argv[], struct benchmark_config *cf
         o_key_pattern,
         o_key_stddev,
         o_key_median,
+        o_key_theta,
         o_show_config,
         o_hide_histogram,
         o_print_percentiles,
@@ -481,6 +485,7 @@ static int config_parse_args(int argc, char *argv[], struct benchmark_config *cf
         { "key-pattern",                1, 0, o_key_pattern },
         { "key-stddev",                 1, 0, o_key_stddev },
         { "key-median",                 1, 0, o_key_median },
+        { "key-theta",                  1, 0, o_key_theta },
         { "reconnect-interval",         1, 0, o_reconnect_interval },
         { "multi-key-get",              1, 0, o_multi_key_get },
         { "authenticate",               1, 0, 'a' },
@@ -746,6 +751,14 @@ static int config_parse_args(int argc, char *argv[], struct benchmark_config *cf
                         return -1;
                     }
                     break;
+                case o_key_theta:
+                    endptr = NULL;
+                    cfg->key_theta = strtod(optarg, &endptr);
+                    if (cfg->key_theta<= 0 || cfg->key_theta>=1 || !endptr || *endptr != '\0') {
+                        fprintf(stderr, "error: key-theta must be greater than zero and less than one.\n");
+                        return -1;
+                    }
+                    break;
                 case o_key_pattern:
                     cfg->key_pattern = optarg;
 
@@ -753,12 +766,14 @@ static int config_parse_args(int argc, char *argv[], struct benchmark_config *cf
                         (cfg->key_pattern[key_pattern_set] != 'R' &&
                          cfg->key_pattern[key_pattern_set] != 'S' &&
                          cfg->key_pattern[key_pattern_set] != 'G' &&
-                         cfg->key_pattern[key_pattern_set] != 'P') ||
+                         cfg->key_pattern[key_pattern_set] != 'P' &&
+                         cfg->key_pattern[key_pattern_set] != 'Z') ||
                         (cfg->key_pattern[key_pattern_get] != 'R' &&
                          cfg->key_pattern[key_pattern_get] != 'S' &&
                          cfg->key_pattern[key_pattern_get] != 'G' &&
-                         cfg->key_pattern[key_pattern_get] != 'P')) {
-                        fprintf(stderr, "error: key-pattern must be in the format of [S/R/G/P]:[S/R/G/P].\n");
+                         cfg->key_pattern[key_pattern_get] != 'P' &&
+                         cfg->key_pattern[key_pattern_set] != 'Z')) {
+                        fprintf(stderr, "error: key-pattern must be in the format of [S/R/G/P/Z]:[S/R/G/P/Z].\n");
                         return -1;
                     }
 
@@ -1010,6 +1025,7 @@ void usage() {
             "                                 R for uniform Random.\n"
             "                                 S for Sequential.\n"
             "                                 P for Parallel (Sequential were each client has a subset of the key-range).\n"
+            "                                 Z for Zipf.\n"
             "\n"
             "Object Options:\n"
             "  -d  --data-size=SIZE           Object data size in bytes (default: 32)\n"
@@ -1040,10 +1056,13 @@ void usage() {
             "                                 R for uniform Random.\n"
             "                                 S for Sequential.\n"
             "                                 P for Parallel (Sequential were each client has a subset of the key-range).\n"
+            "                                 Z for Zipf.\n"
             "      --key-stddev               The standard deviation used in the Gaussian distribution\n"
             "                                 (default is key range / 6)\n"
             "      --key-median               The median point used in the Gaussian distribution\n"
             "                                 (default is the center of the key range)\n"
+            "      --key-theta                The skew used in the Zipf distribution (0, 1)\n"
+            "                                 (default is 0.5)\n"
             "\n"
             "WAIT Options:\n"
             "      --wait-ratio=RATIO         Set:Wait ratio (default is no WAIT commands - 1:0)\n"
@@ -1597,6 +1616,13 @@ int main(int argc, char *argv[])
             usage();
         }
         obj_gen->set_key_distribution(cfg.key_stddev, cfg.key_median);
+    }
+    if (cfg.key_theta>0) {
+        if (cfg.key_pattern[key_pattern_set]!='Z' && cfg.key_pattern[key_pattern_get]!='Z') {
+            fprintf(stderr, "error: key-theta is only allowed together with key-pattern set to Z.\n");
+            usage();
+        }
+        obj_gen->set_key_skew(cfg.key_theta);
     }
     obj_gen->set_expiry_range(cfg.expiry_range.min, cfg.expiry_range.max);
 
