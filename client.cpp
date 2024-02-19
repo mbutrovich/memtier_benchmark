@@ -437,7 +437,7 @@ void client::handle_response(unsigned int conn_id, struct timeval timestamp,
                              request *request, protocol_response *response)
 {
     if (response->is_error()) {
-        benchmark_error_log("server %s handle error response: %s\n",
+        benchmark_debug_log("server %s handle error response: %s\n",
                             m_connections[conn_id]->get_readable_id(),
                             response->get_status());
     }
@@ -455,7 +455,9 @@ void client::handle_response(unsigned int conn_id, struct timeval timestamp,
             m_stats.update_set_op(&timestamp,
                                   response->get_total_len(),
                                   request->m_size,
-                                  ts_diff(request->m_sent_time, timestamp));
+                                  ts_diff(request->m_sent_time, timestamp),
+                                  !response->is_error(),
+                                  response->is_error());
             break;
         case rt_wait:
             m_stats.update_wait_op(&timestamp,
