@@ -327,7 +327,7 @@ void run_stats::save_csv_one_sec(FILE *f,
     for (std::list<one_second_stats>::iterator i = m_stats.begin();
          i != m_stats.end(); i++) {
 
-        fprintf(f, "%u,%lu,%u.%06u,%lu,%lu,%lu,%u,%u,%lu,%u.%06u,%lu,%lu,%lu,%u,%u,%lu,%u.%06u\n",
+        fprintf(f, "%u,%lu,%u.%06u,%lu,%lu,%lu,%lu,%lu,%lu,%u.%06u,%lu,%lu,%lu,%lu,%lu,%lu,%u.%06u\n",
                 i->m_second,
                 i->m_set_cmd.m_ops,
                 USEC_FORMAT(AVERAGE(i->m_set_cmd.m_total_latency, i->m_set_cmd.m_ops)),
