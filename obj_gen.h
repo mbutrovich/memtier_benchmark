@@ -42,12 +42,17 @@ private:
 
 class gaussian_noise: public random_generator {
 public:
-    gaussian_noise() { m_hasSpare = false; }
+    gaussian_noise() { m_hasSpare = false; compute_zipf_coefficient(); }
     unsigned long long gaussian_distribution_range(double stddev, double median, unsigned long long min, unsigned long long max);
+    unsigned long long zipf_distribution_range(double theta, unsigned long long min, unsigned long long max);
+    void compute_zipf_coefficient() { m_computeZipfCoefficient = true;}
 private:
     double gaussian_distribution(const double &stddev);
+    unsigned long long zipf_distribution(double alpha, unsigned long long n);
     bool m_hasSpare;
 	double m_spare;
+    bool m_computeZipfCoefficient;
+    double m_normalization_constant;
 };
 
 #define OBJECT_GENERATOR_KEY_ITERATORS  2 /* number of iterators */
@@ -55,6 +60,7 @@ private:
 #define OBJECT_GENERATOR_KEY_GET_ITER   0
 #define OBJECT_GENERATOR_KEY_RANDOM    -1
 #define OBJECT_GENERATOR_KEY_GAUSSIAN  -2
+#define OBJECT_GENERATOR_KEY_ZIPF      -3
 
 class object_generator {
 public:
@@ -78,6 +84,7 @@ protected:
     unsigned long long m_key_max;
     double m_key_stddev;
     double m_key_median;
+    double m_key_theta;
 
     std::vector<unsigned long long> m_next_key;
 
@@ -102,6 +109,7 @@ public:
 
     unsigned long long random_range(unsigned long long r_min, unsigned long long r_max);
     unsigned long long normal_distribution(unsigned long long r_min, unsigned long long r_max, double r_stddev, double r_median);
+    unsigned long long zipf_distribution(unsigned long long r_min, unsigned long long r_max, double r_theta);
 
     void set_random_data(bool random_data);
     void set_data_size_fixed(unsigned int size);
@@ -112,6 +120,7 @@ public:
     void set_key_prefix(const char *key_prefix);
     void set_key_range(unsigned long long key_min, unsigned long long key_max);
     void set_key_distribution(double key_stddev, double key_median);
+    void set_key_skew(double key_theta);
     void set_random_seed(int seed);
     unsigned long long get_key_index(int iter);
     void generate_key(unsigned long long key_index);
