@@ -21,6 +21,7 @@
 
 #include <vector>
 #include "file_io.h"
+#include "deps/zipf.h"
 
 struct random_data;
 struct config_weight_list;
@@ -42,17 +43,17 @@ private:
 
 class gaussian_noise: public random_generator {
 public:
-    gaussian_noise() { m_hasSpare = false; compute_zipf_coefficient(); }
+    gaussian_noise() { m_hasSpare = false; init_zipf_state(); }
     unsigned long long gaussian_distribution_range(double stddev, double median, unsigned long long min, unsigned long long max);
     unsigned long long zipf_distribution_range(double theta, unsigned long long min, unsigned long long max);
-    void compute_zipf_coefficient() { m_computeZipfCoefficient = true;}
+    void init_zipf_state() { m_initZipfState = true;}
 private:
     double gaussian_distribution(const double &stddev);
-    unsigned long long zipf_distribution(double alpha, unsigned long long n);
+    unsigned long long zipf_distribution(double theta, unsigned long long n);
     bool m_hasSpare;
 	double m_spare;
-    bool m_computeZipfCoefficient;
-    double m_normalization_constant;
+    bool m_initZipfState;
+    struct zipf_gen_state m_zipfState;
 };
 
 #define OBJECT_GENERATOR_KEY_ITERATORS  2 /* number of iterators */

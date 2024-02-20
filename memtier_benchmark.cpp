@@ -754,8 +754,8 @@ static int config_parse_args(int argc, char *argv[], struct benchmark_config *cf
                 case o_key_theta:
                     endptr = NULL;
                     cfg->key_theta = strtod(optarg, &endptr);
-                    if (cfg->key_theta<= 0 || cfg->key_theta>=1 || !endptr || *endptr != '\0') {
-                        fprintf(stderr, "error: key-theta must be greater than zero and less than one.\n");
+                    if (cfg->key_theta<0 || cfg->key_theta>=1 || !endptr || *endptr != '\0') {
+                        fprintf(stderr, "error: key-theta must be greater than or equal to zero and less than one.\n");
                         return -1;
                     }
                     break;
@@ -1061,8 +1061,8 @@ void usage() {
             "                                 (default is key range / 6)\n"
             "      --key-median               The median point used in the Gaussian distribution\n"
             "                                 (default is the center of the key range)\n"
-            "      --key-theta                The skew used in the Zipf distribution (0, 1)\n"
-            "                                 (default is 0.5)\n"
+            "      --key-theta                The skew used in the Zipf distribution [0, 1)\n"
+            "                                 (default is 0)\n"
             "\n"
             "WAIT Options:\n"
             "      --wait-ratio=RATIO         Set:Wait ratio (default is no WAIT commands - 1:0)\n"

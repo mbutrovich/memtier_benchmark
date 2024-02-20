@@ -120,42 +120,17 @@ double gaussian_noise::gaussian_distribution(const double &stddev)
     return stddev * u * s;
 }
 
-
-// https://en.wikipedia.org/wiki/Zipf's_law#Formal_definition
-// https://cse.usf.edu/~kchriste/tools/genzipf.c
-unsigned long long gaussian_noise::zipf_distribution(const double alpha, const unsigned long long n) {
-    assert(alpha > 1);
+unsigned long long gaussian_noise::zipf_distribution(const double theta, const unsigned long long n) {
+    assert(theta >= 0);
+    assert(theta < 1);
     assert(n > 1);
 
-    if (m_computeZipfCoefficient) {
-        for (unsigned long long i = 1; i <= n; i++) {
-            m_normalization_constant += 1.0 / pow((double) i, alpha);
-        }
-        m_normalization_constant = 1.0 / m_normalization_constant;
-        m_computeZipfCoefficient = false;
+    if (m_initZipfState) {
+        zipf_init(&m_zipfState, n, theta, get_random() & 0x0000ffffffffffff);
+        m_initZipfState = false;
     }
 
-    double randf;
-    do {
-        randf = (get_random() / ((double) get_random_max()));
-    } while ((randf == 0) || (randf == 1));
-    assert(randf > 0);
-    assert(randf < 1);
-
-    // Map randf to the value
-    double sum_prob = 0;
-    unsigned long long zipf_value = 0;
-    for (unsigned long long i = 1; i <= n; i++) {
-        sum_prob += m_normalization_constant / pow((double) i, alpha);
-        if (sum_prob >= randf) {
-            zipf_value = i;
-            break;
-        }
-    }
-
-    assert(zipf_value >= 1 && zipf_value <= n);
-
-    return zipf_value;
+    return zipf_next(&m_zipfState);
 }
 
 unsigned long long gaussian_noise::gaussian_distribution_range(double stddev, double median, unsigned long long min, unsigned long long max)
@@ -177,19 +152,14 @@ unsigned long long gaussian_noise::gaussian_distribution_range(double stddev, do
     return val;
 }
 
-unsigned long long gaussian_noise::zipf_distribution_range(double theta, const unsigned long long min, const unsigned long long max) {
-    if (theta == 0) {
-        theta = 0.5;
-    }
-    const double alpha = 1 / (1 - theta);
-    const unsigned long long n = max - min + 1; // zipf_distribution() returns [1,n]
+unsigned long long gaussian_noise::zipf_distribution_range(const double theta, const unsigned long long min, const unsigned long long max) {
+    const unsigned long long n = max - min;
 
-    assert(alpha > 1);
     assert(n > 1);
-    assert(theta > 0);
+    assert(theta >= 0);
     assert(theta < 1);
 
-    const unsigned long long zipf_rv = zipf_distribution(alpha, n) - 1; // normalize back to [0, n-1]
+    const unsigned long long zipf_rv = zipf_distribution(theta, n);
     const unsigned long long result = zipf_rv + min;
     assert(result >= min);
     assert(result <= max);
@@ -409,7 +379,7 @@ void object_generator::set_key_distribution(double key_stddev, double key_median
 
 void object_generator::set_key_skew(const double key_theta) {
     m_key_theta = key_theta;
-    m_random.compute_zipf_coefficient();
+    m_random.init_zipf_state();
 }
 
 // return a random number between r_min and r_max
