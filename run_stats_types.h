@@ -107,6 +107,8 @@ public:
     void merge(const ar_one_sec_cmd_stats& other);
     unsigned long int ops();
     unsigned long int bytes();
+    unsigned long int hits();
+    unsigned long int misses();
     unsigned long long int total_latency();
     size_t size() const;
     one_sec_cmd_stats& at(std::size_t idx) { return m_commands.at(idx); }
@@ -182,6 +184,8 @@ public:
     double m_set_misses_sec;
     double m_get_hits_sec;
     double m_get_misses_sec;
+    double m_ar_hits_sec;
+    double m_ar_misses_sec;
     double m_moved_sec;
     double m_ask_sec;
     unsigned long long int m_latency;

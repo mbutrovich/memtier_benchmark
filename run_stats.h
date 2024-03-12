@@ -136,7 +136,7 @@ public:
 
     void update_wait_op(struct timeval* ts, unsigned int latency);
     void update_arbitrary_op(struct timeval *ts, unsigned int bytes_rx, unsigned int bytes_tx,
-                             unsigned int latency, size_t arbitrary_index);
+                             unsigned int latency, size_t arbitrary_index, unsigned int hits, unsigned int misses);
 
     void aggregate_average(const std::vector<run_stats>& all_stats);
     void summarize(totals& result) const;

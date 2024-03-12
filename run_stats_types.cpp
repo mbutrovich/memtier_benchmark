@@ -143,6 +143,24 @@ unsigned long int ar_one_sec_cmd_stats::bytes() {
     return total_bytes;
 }
 
+unsigned long int ar_one_sec_cmd_stats::hits() {
+    unsigned long int total_hits = 0;
+    for (size_t i = 0; i<m_commands.size(); i++) {
+        total_hits += m_commands[i].m_hits;
+    }
+
+    return total_hits;
+}
+
+unsigned long int ar_one_sec_cmd_stats::misses() {
+    unsigned long int total_misses = 0;
+    for (size_t i = 0; i<m_commands.size(); i++) {
+        total_misses += m_commands[i].m_misses;
+    }
+
+    return total_misses;
+}
+
 unsigned long long int ar_one_sec_cmd_stats::total_latency() {
     unsigned long long int latency = 0;
     for (size_t i = 0; i<m_commands.size(); i++) {
@@ -276,6 +294,8 @@ totals::totals() :
         m_set_misses_sec(0),
         m_get_hits_sec(0),
         m_get_misses_sec(0),
+        m_ar_hits_sec(0),
+        m_ar_misses_sec(0),
         m_moved_sec(0),
         m_ask_sec(0),
         m_latency(0),
@@ -299,6 +319,8 @@ void totals::add(const totals& other) {
     m_set_misses_sec += other.m_set_misses_sec;
     m_get_hits_sec += other.m_get_hits_sec;
     m_get_misses_sec += other.m_get_misses_sec;
+    m_ar_hits_sec += other.m_ar_hits_sec;
+    m_ar_misses_sec += other.m_ar_misses_sec;
     m_moved_sec += other.m_moved_sec;
     m_ask_sec += other.m_ask_sec;
     m_bytes_sec += other.m_bytes_sec;

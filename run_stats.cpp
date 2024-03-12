@@ -264,10 +264,10 @@ void run_stats::update_wait_op(struct timeval *ts, unsigned int latency)
 }
 
 void run_stats::update_arbitrary_op(struct timeval *ts, unsigned int bytes_rx, unsigned int bytes_tx,
-                                    unsigned int latency, size_t request_index) {
+                                    unsigned int latency, size_t request_index, unsigned int hits, unsigned int misses) {
     roll_cur_stats(ts);
 
-    m_cur_stats.m_ar_commands.at(request_index).update_op(bytes_rx, bytes_tx, latency);
+    m_cur_stats.m_ar_commands.at(request_index).update_op(bytes_rx, bytes_tx, latency, hits, misses);
     m_totals.update_op(bytes_rx, bytes_tx, latency);
 
     struct hdr_histogram* hist = m_ar_commands_latency_histograms.at(request_index);
@@ -751,6 +751,8 @@ void run_stats::aggregate_average(const std::vector<run_stats>& all_stats)
     m_totals.m_set_misses_sec /= all_stats.size();
     m_totals.m_get_hits_sec /= all_stats.size();
     m_totals.m_get_misses_sec /= all_stats.size();
+    m_totals.m_ar_hits_sec /= all_stats.size();
+    m_totals.m_ar_misses_sec /= all_stats.size();
     m_totals.m_moved_sec /= all_stats.size();
     m_totals.m_ask_sec /= all_stats.size();
     m_totals.m_bytes_sec /= all_stats.size();
@@ -833,6 +835,8 @@ void run_stats::summarize(totals& result) const
     result.m_set_misses_sec = (double) totals.m_set_cmd.m_misses / test_duration_usec * 1000000;
     result.m_get_hits_sec = (double) totals.m_get_cmd.m_hits / test_duration_usec * 1000000;
     result.m_get_misses_sec = (double) totals.m_get_cmd.m_misses / test_duration_usec * 1000000;
+    result.m_ar_hits_sec = (double) totals.m_ar_commands.hits() / test_duration_usec * 1000000;
+    result.m_ar_misses_sec = (double) totals.m_ar_commands.misses() / test_duration_usec * 1000000;
 
     // total/sec
     result.m_ops_sec = (double) result.m_ops / test_duration_usec * 1000000;
@@ -1014,10 +1018,18 @@ void run_stats::print_hits_sec_column(output_table &table) {
 
     column.elements.push_back(*el.init_str("%12s ", "Hits/sec"));
     column.elements.push_back(*el.init_str("%s", "-------------"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_hits_sec));
-    column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec + m_totals.m_get_hits_sec));
+
+    if (print_arbitrary_commands_results()) {
+        for (unsigned int i=0; i<m_totals.m_ar_commands.size(); i++) {
+            column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_hits_sec));
+        }
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_misses_sec));
+    } else {
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec));
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_hits_sec));
+        column.elements.push_back(*el.init_str("%12s ", "---"));
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec + m_totals.m_get_hits_sec));
+    }
 
     table.add_column(column);
 }
@@ -1028,10 +1040,18 @@ void run_stats::print_missess_sec_column(output_table &table) {
 
     column.elements.push_back(*el.init_str("%12s ", "Misses/sec"));
     column.elements.push_back(*el.init_str("%s", "-------------"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_misses_sec));
-    column.elements.push_back(*el.init_str("%12s ", "---"));
-    column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec + m_totals.m_get_misses_sec));
+
+    if (print_arbitrary_commands_results()) {
+        for (unsigned int i=0; i<m_totals.m_ar_commands.size(); i++) {
+            column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_misses_sec));
+        }
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_misses_sec));
+    } else {
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec));
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_misses_sec));
+        column.elements.push_back(*el.init_str("%12s ", "---"));
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_misses_sec + m_totals.m_get_misses_sec));
+    }
 
     table.add_column(column);
 }
@@ -1367,14 +1387,10 @@ void run_stats::print(FILE *out, benchmark_config *config,
     print_ops_sec_column(table);
 
     // Hits/sec column (not relevant for arbitrary commands)
-    if (!print_arbitrary_commands_results()) {
-        print_hits_sec_column(table);
-    }
+    print_hits_sec_column(table);
 
     // Misses/sec column (not relevant for arbitrary commands)
-    if (!print_arbitrary_commands_results()) {
-        print_missess_sec_column(table);
-    }
+    print_missess_sec_column(table);
 
     // Moved & ASK column (relevant only for cluster mode)
     if (config->cluster_mode) {

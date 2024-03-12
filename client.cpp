@@ -469,7 +469,9 @@ void client::handle_response(unsigned int conn_id, struct timeval timestamp,
                                         response->get_total_len(),
                                         request->m_size,
                                         ts_diff(request->m_sent_time, timestamp),
-                                        ar->index);
+                                        ar->index,
+                                        !response->is_error(),
+                                        response->is_error());
             break;
         }
         default:
