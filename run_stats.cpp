@@ -1023,7 +1023,7 @@ void run_stats::print_hits_sec_column(output_table &table) {
         for (unsigned int i=0; i<m_totals.m_ar_commands.size(); i++) {
             column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_hits_sec));
         }
-        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_misses_sec));
+        column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_ar_hits_sec));
     } else {
         column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_set_hits_sec));
         column.elements.push_back(*el.init_double("%12.2f ", m_totals.m_get_hits_sec));
