@@ -450,7 +450,7 @@ void object_generator::generate_key(unsigned long long key_index) {
                                   key_index;
     memcpy(&(m_key_buffer[0]), &phone_number, 8);
     if (random_range(0, 99)) {
-        m_key_buffer[8] = random_range(0, num_contestants - 1);
+        m_key_buffer[8] = random_range(1, num_contestants);
     } else {
         m_key_buffer[8] = 255;
     }
